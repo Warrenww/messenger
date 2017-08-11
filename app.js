@@ -342,9 +342,8 @@ function apiai(obj){
   request.on('response', function(response) {
     let action = response.result.action ;
     let incomplete = response.result.actionIncomplete ;
-    //let speech = response.result.fulfillment.messages[0].speech ;
     console.log(response);
-    if(action == 'search.SSR' && !incomplete){
+    if(action == 'search.SSR' || action == "search.ability"){
       searchCat(obj,response) ;
     }
     
@@ -358,17 +357,15 @@ function apiai(obj){
   request.end();
 }
 
-function searchCat(obj,res) {
+function searchCat(obj,response) {
   var ID = '1lGJC6mfH9E0D2bYNKVBz78He1QhLMUYNFSfASzaZE9A' ;
   
-  let senderID = obj.sender.id ;
-  let catID = res.result.parameters.SSR ;
-  let catSta = res.result.parameters.state ;
-  if(catSta == ''){catSta = '1';}
-  let cat = catID + "-" + catSta ;
+  let action = response.result.action ;
+  let incomplete = response.result.actionIncomplete ;
+  
   
   var gsjson = require('google-spreadsheet-to-json');
-  console.log(cat);
+  
   
     gsjson({
         spreadsheetId: ID,
@@ -377,29 +374,91 @@ function searchCat(obj,res) {
     })
     .then(function(result) {
       //console.log(result.length);
-      for(let j in result){
-        if(result[j]['id'] == cat){
-          console.log('match!') ;
-          let data = '' ;
-          for(let i in result[j]){
-            if(i != 'picture' && i != 'id'){data += i+':'+result[j][i]+'\n' ;}
+      let senderID = obj.sender.id ;
+      
+      if(action == 'search.SSR' && !incomplete){
+        let catID = response.result.parameters.SSR ;
+        let catSta = response.result.parameters.state ;
+        if(catSta == ''){catSta = '1';}
+        let cat = catID + "-" + catSta ;
+        console.log(cat);
+        
+        for(let j in result){
+          if(result[j]['id'] == cat){
+            console.log('match!') ;
+            let data = '' ;
+            for(let i in result[j]){
+              if(i != 'picture' && i != 'id'){data += i+':'+result[j][i]+'\n' ;}
+            }
+            console.log(data);
+            sendTextMessage(senderID,data);
+            sendImageMessage(senderID,result[j].picture);
+            return ;
           }
-          console.log(data);
-          sendTextMessage(senderID,data);
-          sendImageMessage(senderID,result[j].picture);
-          return ;
         }
+        console.log(catID+'not yet upgrade ') ;
+        cat = catID + "-1" ;
+        let name ;
+        for(let j in result){if(result[j]['id'] == cat){name = result[j]['全名'];}}
+        sendTextMessage(senderID,name+'還沒有'+catSta+'階進化噢' );
       }
-      console.log(catID+'not yet upgrade ') ;
-      cat = catID + "-1" ;
-      let name ;
-      for(let j in result){if(result[j]['id'] == cat){name = result[j]['全名'];}}
-      sendTextMessage(senderID,name+'還沒有'+catSta+'階進化噢' );
-})
-.catch(function(err) {
-    console.log(err.message);
-    console.log(err.stack);
-});
+      else if(action == "search.ability"){
+        let color = response.result.parameters.catAbility ;
+        let rare = response.result.parameters.raretivity ;
+        let answer = '' ;
+        
+        console.log(color+";"+rare);
+        
+        if(rare != ''){
+          for(let i in result){
+            if(result[i]['稀有度'] == rare && result[i]['特性'].trim().indexOf(color) != -1){
+              answer +=  result[i]['全名']+'\n' ;
+            }
+            
+            sendTextMessage(senderID,answer );
+          }
+        }
+        else{
+          let answer1 = '',
+              answer2 = '',
+              answer3 = '',
+              answer4 = '',
+              answer5 = '';
+          
+            answer1 += '基本貓:\n';
+            answer2 += 'EX貓:\n';
+            answer3 += '稀有:\n';
+            answer4 += '激稀有:\n';
+            answer5 += '超激稀有:\n';
+            console.log(answer);
+            //console.log(result[438]['特性'].trim());
+            //console.log(result[438]['特性'].trim().indexOf(color));
+            
+            for(let i in result){
+              if(result[i]['特性'].trim().indexOf(color) != -1){
+                if(result[i]['稀有度'] == '基本')answer1 += result[i]['全名']+'\t';
+                if(result[i]['稀有度'] == 'EX')  answer2 += result[i]['全名']+'\t';
+                if(result[i]['稀有度'] == '稀有')answer3 += result[i]['全名']+'\t';
+                if(result[i]['稀有度'] == '激稀有')answer4 += result[i]['全名']+'\t';
+                if(result[i]['稀有度'] == '超激稀有')answer5 += result[i]['全名']+'\t';
+              }
+            }
+          
+          sendTextMessage(senderID,answer1 );
+          sendTextMessage(senderID,answer2 );
+          sendTextMessage(senderID,answer3 );
+          sendTextMessage(senderID,answer4 );
+          sendTextMessage(senderID,answer5 );   
+        }
+        
+        
+      }
+      
+    })
+    .catch(function(err) {
+        console.log(err.message);
+        console.log(err.stack);
+    });
 
 }
 
