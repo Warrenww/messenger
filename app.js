@@ -405,50 +405,113 @@ function searchCat(obj,response) {
       else if(action == "search.ability"){
         let color = response.result.parameters.catAbility ;
         let rare = response.result.parameters.raretivity ;
+        let ability = response.result.parameters.catAttack ;
         let answer = '' ;
+        let exist = '000' ;
         
-        console.log(color+";"+rare);
+        console.log(color+";"+rare+";"+ability);
         
-        if(rare != ''){
+        if(color != '' && rare != '' && ability != ''){
           for(let i in result){
-            if(result[i]['稀有度'] == rare && result[i]['特性'].trim().indexOf(color) != -1){
-              answer +=  result[i]['全名']+'\n' ;
-            }
-            
-            sendTextMessage(senderID,answer );
-          }
-        }
-        else{
-          let answer1 = '',
-              answer2 = '',
-              answer3 = '',
-              answer4 = '',
-              answer5 = '';
-          
-            answer1 += '基本貓:\n';
-            answer2 += 'EX貓:\n';
-            answer3 += '稀有:\n';
-            answer4 += '激稀有:\n';
-            answer5 += '超激稀有:\n';
-            console.log(answer);
-            //console.log(result[438]['特性'].trim());
-            //console.log(result[438]['特性'].trim().indexOf(color));
-            
-            for(let i in result){
-              if(result[i]['特性'].trim().indexOf(color) != -1){
-                if(result[i]['稀有度'] == '基本')answer1 += result[i]['全名']+'\t';
-                if(result[i]['稀有度'] == 'EX')  answer2 += result[i]['全名']+'\t';
-                if(result[i]['稀有度'] == '稀有')answer3 += result[i]['全名']+'\t';
-                if(result[i]['稀有度'] == '激稀有')answer4 += result[i]['全名']+'\t';
-                if(result[i]['稀有度'] == '超激稀有')answer5 += result[i]['全名']+'\t';
+            if(result[i]['稀有度'] == rare){
+              if(result[i]['特性'].trim().indexOf(color) != -1 && result[i]['特性'].trim().indexOf(ability) != -1)
+              {
+                answer += result[i]['全名']+' :\n'+result[i]['特性']+'\n\n' ;
               }
             }
+          }
+          if(answer == ''){answer = '沒有符合條件的貓咪>_<' ;}
+          sendTextMessage(senderID,answer );
+        }
+        else if(rare != ''){
+          if(color != ''){
+             for(let i in result){
+              if(result[i]['稀有度'] == rare && result[i]['特性'].trim().indexOf(color) != -1)
+              {
+                let current = result[i].id.substr(0,3) ;
+                if(current == exist) continue ;
+                //console.log(result[i]['id'].substr(0,3)+":"+exist);
+                answer +=  result[i]['全名']+' \n' ;
+                exist = current ;
+              }
+              
+            }
+          }
+          if(ability != ''){
+             for(let i in result){
+              if(result[i]['稀有度'] == rare && result[i]['特性'].trim().indexOf(ability) != -1)
+              {
+                let current = result[i].id.substr(0,3) ;
+                if(current == exist) continue ;
+                //console.log(result[i]['id'].substr(0,3)+":"+exist);
+                answer +=  result[i]['全名']+' \n' ;
+                exist = current ;
+              }
+              
+            }
+          }
+          if(answer == ''){answer = '沒有符合條件的貓咪>_<' ;}
+          sendTextMessage(senderID,answer );
+        }
+        else if(ability != ''){
+          if(color != ''){
+            for(let i in result){
+              if(result[i]['特性'].trim().indexOf(ability) != -1 && result[i]['特性'].trim().indexOf(color) != -1)
+              {
+                let current = result[i].id.substr(0,3) ;
+                if(current == exist) continue ;
+                //console.log(result[i]['id'].substr(0,3)+":"+exist);
+                answer +=  result[i]['全名']+' \n' ;
+                exist = current ;
+              }
+            }
+          }
+          else{
+            for(let i in result){
+              if(result[i]['特性'].trim().indexOf(ability) != -1)
+              {
+                let current = result[i].id.substr(0,3) ;
+                if(current == exist) continue ;
+                //console.log(result[i]['id'].substr(0,3)+":"+exist);
+                answer +=  result[i]['全名']+' \n' ;
+                exist = current ;
+              }
+            }
+          }
+          if(answer == ''){answer = '沒有符合條件的貓咪>_<' ;}
+          sendTextMessage(senderID,answer );
+        }
+        else{
+          let answer = {
+                normal : '基本貓:\n',
+                ex : 'EX貓:\n',
+                rare : '稀有:\n',
+                SR : '激稀有:\n',
+                SSR : '超激稀有:\n'
+              } ;
+          let exist = '000';
           
-          sendTextMessage(senderID,answer1 );
-          sendTextMessage(senderID,answer2 );
-          sendTextMessage(senderID,answer3 );
-          sendTextMessage(senderID,answer4 );
-          sendTextMessage(senderID,answer5 );   
+          //console.log(answer);
+          //console.log(result[438]['特性'].trim());
+          //console.log(result[438]['特性'].trim().indexOf(color));
+          
+          for(let i in result){
+            if(result[i]['特性'].trim().indexOf(color) != -1){
+              let current = result[i].id.substr(0,3) ;
+              if(exist == current) continue ;
+              //console.log(exist+":"+current);
+              if(result[i]['稀有度'] == '基本' )answer.normal += result[i]['全名']+'\n';
+              if(result[i]['稀有度'] == 'EX' )  answer.ex += result[i]['全名']+'\n';
+              if(result[i]['稀有度'] == '稀有' )answer.rare += result[i]['全名']+'\n';
+              if(result[i]['稀有度'] == '激稀有' )answer.SR += result[i]['全名']+'\n';
+              if(result[i]['稀有度'] == '超激稀有' )answer.SSR += result[i]['全名']+'\n';
+              exist = current ;
+            }
+          }
+          for(let i in answer){
+            console.log(answer[i].indexOf(':')+":"+answer[i].length) ;
+            if(answer[i].indexOf(':')+2 != answer[i].length) sendTextMessage(senderID,answer[i] );
+          }
         }
         
         
