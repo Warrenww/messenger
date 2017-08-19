@@ -333,15 +333,15 @@ function apiai(obj){
   
   var apiai = require('apiai');
  
-  var app = apiai("e48353d876d745c7ba1dcd6a57c30b09");
+  var app = apiai("5bd4e2bcf327481fa46de878a0623438");
    
   var request = app.textRequest(text, {
-      sessionId: '62b8d4f1-a997-4e0f-9cb7-6fae5cecb6c9'
+      sessionId: 'cf32dac3-3e77-4c8e-b042-b792c854fd6c'
   });
    
   request.on('response', function(response) {
     let action = response.result.action ;
-    let incomplete = response.result.actionIncomplete ;
+    let complete = !response.result.actionIncomplete ;
     console.log(response);
     if(action == 'search.SSR' || action == "search.ability"){
       searchCat(obj,response) ;
@@ -361,7 +361,7 @@ function searchCat(obj,response) {
   var ID = '1lGJC6mfH9E0D2bYNKVBz78He1QhLMUYNFSfASzaZE9A' ;
   
   let action = response.result.action ;
-  let incomplete = response.result.actionIncomplete ;
+  let complete = !response.result.actionIncomplete ;
   
   
   var gsjson = require('google-spreadsheet-to-json');
@@ -376,7 +376,7 @@ function searchCat(obj,response) {
       //console.log(result.length);
       let senderID = obj.sender.id ;
       
-      if(action == 'search.SSR' && !incomplete){
+      if(action == 'search.SSR' && complete){
         let catID = response.result.parameters.SSR ;
         let catSta = response.result.parameters.state ;
         if(catSta == ''){catSta = '1';}
@@ -388,7 +388,8 @@ function searchCat(obj,response) {
             console.log('match!') ;
             let data = '' ;
             for(let i in result[j]){
-              if(i != 'picture' && i != 'id'){data += i+':'+result[j][i]+'\n' ;}
+              if(i != 'picture' && i != 'id' && i != 'tag')
+              {data += i+':'+result[j][i]+'\n' ;}
             }
             console.log(data);
             sendTextMessage(senderID,data);
@@ -408,112 +409,73 @@ function searchCat(obj,response) {
         let ability = response.result.parameters.catAttack ;
         let answer = '' ;
         let exist = '000' ;
+        let buffer = [] ;
+        
+        if(color == '') color = '[' ;
+        if(ability == '') ability = '[' ;
         
         console.log(color+";"+rare+";"+ability);
         
-        if(color != '' && rare != '' && ability != ''){
+        if(rare != '' ){
           for(let i in result){
+            let current = result[i].id.substr(0,3) ;
+            
+            if(current == exist) continue ;
+            else exist = current ;
+            
+            let colorTag = result[i]['tag'].trim().indexOf(color) ;
+            let abilityTag = result[i]['tag'].trim().indexOf(ability) ;
+            
             if(result[i]['稀有度'] == rare){
-              if(result[i]['特性'].trim().indexOf(color) != -1 && result[i]['特性'].trim().indexOf(ability) != -1)
+              //console.log(i+":"+colorTag+";"+abilityTag);
+              if(colorTag != -1 && abilityTag != -1)
               {
-                answer += result[i]['全名']+' :\n'+result[i]['特性']+'\n\n' ;
+                buffer.push(result[i]['全名']) ;
+                answer += result[i]['全名']+'\n' ;
               }
             }
           }
-          if(answer == ''){answer = '沒有符合條件的貓咪>_<' ;}
-          sendTextMessage(senderID,answer );
-        }
-        else if(rare != ''){
-          if(color != ''){
-             for(let i in result){
-              if(result[i]['稀有度'] == rare && result[i]['特性'].trim().indexOf(color) != -1)
-              {
-                let current = result[i].id.substr(0,3) ;
-                if(current == exist) continue ;
-                //console.log(result[i]['id'].substr(0,3)+":"+exist);
-                answer +=  result[i]['全名']+' \n' ;
-                exist = current ;
-              }
-              
-            }
-          }
-          if(ability != ''){
-             for(let i in result){
-              if(result[i]['稀有度'] == rare && result[i]['特性'].trim().indexOf(ability) != -1)
-              {
-                let current = result[i].id.substr(0,3) ;
-                if(current == exist) continue ;
-                //console.log(result[i]['id'].substr(0,3)+":"+exist);
-                answer +=  result[i]['全名']+' \n' ;
-                exist = current ;
-              }
-              
-            }
-          }
-          if(answer == ''){answer = '沒有符合條件的貓咪>_<' ;}
-          sendTextMessage(senderID,answer );
-        }
-        else if(ability != ''){
-          if(color != ''){
-            for(let i in result){
-              if(result[i]['特性'].trim().indexOf(ability) != -1 && result[i]['特性'].trim().indexOf(color) != -1)
-              {
-                let current = result[i].id.substr(0,3) ;
-                if(current == exist) continue ;
-                //console.log(result[i]['id'].substr(0,3)+":"+exist);
-                answer +=  result[i]['全名']+' \n' ;
-                exist = current ;
-              }
-            }
+          if(answer == ''){
+            answer = '沒有符合條件的貓咪>_<' ;
+            sendTextMessage(senderID,answer );
           }
           else{
-            for(let i in result){
-              if(result[i]['特性'].trim().indexOf(ability) != -1)
-              {
-                let current = result[i].id.substr(0,3) ;
-                if(current == exist) continue ;
-                //console.log(result[i]['id'].substr(0,3)+":"+exist);
-                answer +=  result[i]['全名']+' \n' ;
-                exist = current ;
-              }
-            }
+            sendTextMessage(senderID,answer );
+            setTimeout(function(){selectSearch(buffer,senderID);}, 500);
           }
-          if(answer == ''){answer = '沒有符合條件的貓咪>_<' ;}
-          sendTextMessage(senderID,answer );
+         
+
         }
         else{
-          let answer = {
-                normal : '基本貓:\n',
-                ex : 'EX貓:\n',
-                rare : '稀有:\n',
-                SR : '激稀有:\n',
-                SSR : '超激稀有:\n'
-              } ;
-          let exist = '000';
-          
-          //console.log(answer);
-          //console.log(result[438]['特性'].trim());
-          //console.log(result[438]['特性'].trim().indexOf(color));
-          
           for(let i in result){
-            if(result[i]['特性'].trim().indexOf(color) != -1){
               let current = result[i].id.substr(0,3) ;
-              if(exist == current) continue ;
-              //console.log(exist+":"+current);
-              if(result[i]['稀有度'] == '基本' )answer.normal += result[i]['全名']+'\n';
-              if(result[i]['稀有度'] == 'EX' )  answer.ex += result[i]['全名']+'\n';
-              if(result[i]['稀有度'] == '稀有' )answer.rare += result[i]['全名']+'\n';
-              if(result[i]['稀有度'] == '激稀有' )answer.SR += result[i]['全名']+'\n';
-              if(result[i]['稀有度'] == '超激稀有' )answer.SSR += result[i]['全名']+'\n';
-              exist = current ;
-            }
+              
+              if(current == exist) continue ;
+              else exist = current ;
+              
+              let colorTag = result[i]['tag'].trim().indexOf(color) ;
+              let abilityTag = result[i]['tag'].trim().indexOf(ability) ;
+              
+              if(colorTag != -1 && abilityTag != -1){
+                buffer.push(result[i]['全名']) ;
+                answer += result[i]['全名']+'\n' ;
+              } 
+                
           }
-          for(let i in answer){
-            console.log(answer[i].indexOf(':')+":"+answer[i].length) ;
-            if(answer[i].indexOf(':')+2 != answer[i].length) sendTextMessage(senderID,answer[i] );
+          
+          if(answer == ''){
+            answer = '沒有符合條件的貓咪>_<' ;
+            sendTextMessage(senderID,answer );
           }
+          else{
+            sendTextMessage(senderID,answer );
+            setTimeout(function(){selectSearch(buffer,senderID);}, 500);
+          }
+          
         }
         
+        
+
         
       }
       
@@ -523,6 +485,23 @@ function searchCat(obj,response) {
         console.log(err.stack);
     });
 
+}
+
+function selectSearch(array,senderID) {
+  let random ;
+  let result = [] ;
+  console.log(array);
+  
+  result.push('想查詢他們的資料嗎?');
+  for(let i=0 ; i<4 ; i++){
+    random = Math.random()*array.length ;
+    random = parseInt(random) ;
+    console.log(random+":"+array.length);
+    result.push("查詢"+array[random]+"的資料") ;
+  }
+  result.push('查詢其他貓咪的資料');
+  console.log(result);
+  sendQuickReply(senderID,result) ;
 }
 
 /*
@@ -546,6 +525,50 @@ function sendImageMessage(recipientId,url) {
 
   callSendAPI(messageData);
 }
+
+/*
+ * Send a message with Quick Reply buttons.
+ *
+ */
+function sendQuickReply(recipientId,arr) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: arr[0],
+      quick_replies: [
+        {
+          "content_type":"text",
+          "title":arr[1],
+          "payload":arr[1]
+        },{
+          "content_type":"text",
+          "title":arr[2],
+          "payload":arr[2]
+        },{
+          "content_type":"text",
+          "title":arr[3],
+          "payload":arr[3]
+        },{
+          "content_type":"text",
+          "title":arr[4],
+          "payload":arr[4]
+        },{
+          "content_type":"text",
+          "title":arr[5],
+          "payload":arr[5]
+        }
+      ]
+    }
+  };
+
+  callSendAPI(messageData);
+}
+
+
+
+
 
 /*
  * Delivery Confirmation Event
@@ -890,40 +913,6 @@ function sendReceiptMessage(recipientId) {
           }]
         }
       }
-    }
-  };
-
-  callSendAPI(messageData);
-}
-
-/*
- * Send a message with Quick Reply buttons.
- *
- */
-function sendQuickReply(recipientId) {
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: "What's your favorite movie genre?",
-      quick_replies: [
-        {
-          "content_type":"text",
-          "title":"Action",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_ACTION"
-        },
-        {
-          "content_type":"text",
-          "title":"Comedy",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_COMEDY"
-        },
-        {
-          "content_type":"text",
-          "title":"Drama",
-          "payload":"DEVELOPER_DEFINED_PAYLOAD_FOR_PICKING_DRAMA"
-        }
-      ]
     }
   };
 
