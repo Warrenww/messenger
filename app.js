@@ -343,9 +343,10 @@ function apiai(obj){
     let action = response.result.action ;
     let complete = !response.result.actionIncomplete ;
     console.log(response);
-    if(action == 'search.SSR' || action == "search.ability"){
+    if(action == 'search.SSR' || action == "search.ability" || action == 'compare'){
       searchCat(obj,response) ;
     }
+    
     
     //sendTextMessage(senderID,speech);
   });
@@ -369,6 +370,8 @@ function searchCat(obj,response) {
   
     gsjson({
         spreadsheetId: ID,
+        hash : 'id' ,
+        //propertyMode: 'pascal'
         //worksheet: 3 
         // other options... 
     })
@@ -381,12 +384,34 @@ function searchCat(obj,response) {
         let catSta = response.result.parameters.state ;
         if(catSta == ''){catSta = '1';}
         let cat = catID + "-" + catSta ;
+        let data = '' ;
         console.log(cat);
         
+        if(result[cat] == undefined){
+          console.log(catID+'not yet upgrade ') ;
+          cat = catID + "-1" ;
+          let name ;
+          name = result[cat]['全名'] ;
+          sendTextMessage(senderID,name+'還沒有'+catSta+'階進化噢' );
+          let arr = ['查詢'+name+'的資料','查詢'+name+'一階的資料','查詢'+name+'二階的資料'] ;
+          sendQuickReply(senderID,arr) ;
+          return ;
+        }
+        
+        for(let i in result[cat]){
+              if(i != 'picture' && i != 'id' && i != 'tag')
+              {data += i+':'+result[cat][i]+'\n' ;}
+        }
+        console.log(data);
+        sendTextMessage(senderID,data);
+        sendImageMessage(senderID,result[cat].picture);
+        
+
+        /*
         for(let j in result){
           if(result[j]['id'] == cat){
-            console.log('match!') ;
-            let data = '' ;
+            console.log(j+":"+'match!') ;
+            
             for(let i in result[j]){
               if(i != 'picture' && i != 'id' && i != 'tag')
               {data += i+':'+result[j][i]+'\n' ;}
@@ -397,11 +422,15 @@ function searchCat(obj,response) {
             return ;
           }
         }
+     
         console.log(catID+'not yet upgrade ') ;
         cat = catID + "-1" ;
         let name ;
-        for(let j in result){if(result[j]['id'] == cat){name = result[j]['全名'];}}
+        // for(let j in result){if(result[j]['id'] == cat){name = result[j]['全名'];}}
+        name = result[cat]['全名'] ;
         sendTextMessage(senderID,name+'還沒有'+catSta+'階進化噢' );
+        
+        //*/
       }
       else if(action == "search.ability"){
         let color = response.result.parameters.catAbility ;
@@ -478,6 +507,9 @@ function searchCat(obj,response) {
 
         
       }
+      else if(action == "compare"){
+        
+      }
       
     })
     .catch(function(err) {
@@ -531,35 +563,25 @@ function sendImageMessage(recipientId,url) {
  *
  */
 function sendQuickReply(recipientId,arr) {
+  
+  let reply = [] ;
+  let json = {} ;
+  for(let i = 1 ; i<arr.length ; i++){
+    json.content_type = "text" ;
+    json.title = arr[i] ;
+    json.payload = arr[i] ;
+    reply.push(json) ;
+    json = {} ;
+  }
+  
   var messageData = {
     recipient: {
       id: recipientId
     },
     message: {
       text: arr[0],
-      quick_replies: [
-        {
-          "content_type":"text",
-          "title":arr[1],
-          "payload":arr[1]
-        },{
-          "content_type":"text",
-          "title":arr[2],
-          "payload":arr[2]
-        },{
-          "content_type":"text",
-          "title":arr[3],
-          "payload":arr[3]
-        },{
-          "content_type":"text",
-          "title":arr[4],
-          "payload":arr[4]
-        },{
-          "content_type":"text",
-          "title":arr[5],
-          "payload":arr[5]
-        }
-      ]
+      quick_replies: reply
+  
     }
   };
 
@@ -1035,4 +1057,5 @@ app.listen(app.get('port'), function() {
 });
 
 module.exports = app;
+
 
